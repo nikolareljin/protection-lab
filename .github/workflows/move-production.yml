@@ -1,0 +1,27 @@
+# Test: can CI move the production tag? One job with GITHUB_TOKEN (should be
+# refused by the ruleset), one with the repository deploy key (should pass).
+name: move-production
+on: workflow_dispatch
+permissions:
+  contents: write
+jobs:
+  with-github-token:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          git config user.name ci && git config user.email ci@example.com
+          git commit --allow-empty -m "token move $GITHUB_RUN_ID"
+          git tag -f production
+          git push -f origin refs/tags/production
+  with-deploy-key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.PRODUCTION_DEPLOY_KEY }}
+      - run: |
+          git config user.name ci && git config user.email ci@example.com
+          git commit --allow-empty -m "deploy key move $GITHUB_RUN_ID"
+          git tag -f production
+          git push -f origin refs/tags/production
